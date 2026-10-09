@@ -1,0 +1,283 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+}
+
+enum Unit {
+  PIECE
+  METER
+  KILOGRAM
+  TON
+}
+
+enum StockStatus {
+  IN_STOCK
+  LOW_STOCK
+  MADE_TO_ORDER
+  OUT_OF_STOCK
+}
+
+enum QuoteStatus {
+  NEW
+  REVIEWING
+  QUOTED
+  COMPLETED
+  CANCELLED
+}
+
+enum QuoteSource {
+  CART
+  CONTACT
+}
+
+model User {
+  id           String               @id @default(cuid())
+  username     String               @unique
+  email        String               @unique
+  name         String
+  passwordHash String
+  role         Role                 @default(EDITOR)
+  active       Boolean              @default(true)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  auditLogs    AuditLog[]
+  resetTokens  PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
+}
+
+model Category {
+  id             String              @id @default(cuid())
+  name           String
+  slug           String              @unique
+  description    String?             @db.Text
+  parentId       String?
+  parent         Category?           @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children       Category[]          @relation("CategoryTree")
+  imageId        String?
+  image          Media?              @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  sortOrder      Int                 @default(0)
+  published      Boolean             @default(false)
+  seoTitle       String?
+  seoDescription String?             @db.Text
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  products       Product[]
+  specFields     CategorySpecField[]
+
+  @@index([parentId, sortOrder])
+  @@index([published, sortOrder])
+}
+
+model CategorySpecField {
+  id         String   @id @default(cuid())
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  key        String
+  label      String
+  unit       String?
+  filterable Boolean  @default(false)
+  sortOrder  Int      @default(0)
+
+  @@unique([categoryId, key])
+}
+
+model Product {
+  id             String         @id @default(cuid())
+  name           String
+  slug           String         @unique
+  sku            String         @unique
+  categoryId     String
+  category       Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  description    String         @db.Text
+  profileType    String?
+  sectionShape   String?
+  widthMm        Decimal?       @db.Decimal(10, 2)
+  heightMm       Decimal?       @db.Decimal(10, 2)
+  thicknessMm    Decimal?       @db.Decimal(10, 2)
+  lengthMm       Decimal?       @db.Decimal(10, 2)
+  materialGrade  String?
+  weightPerMeter Decimal?       @db.Decimal(10, 3)
+  unit           Unit           @default(METER)
+  stockStatus    StockStatus    @default(MADE_TO_ORDER)
+  minOrderQty    Decimal        @db.Decimal(12, 3)
+  featured       Boolean        @default(false)
+  published      Boolean        @default(false)
+  seoTitle       String?
+  seoDescription String?        @db.Text
+  specs          Json?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  images         ProductImage[]
+  quoteItems     QuoteRequestItem[]
+
+  @@index([published, featured, updatedAt])
+  @@index([published, categoryId])
+  @@index([published, profileType])
+  @@index([published, materialGrade])
+  @@index([name])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  mediaId   String
+  media     Media   @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+  alt       String
+  sortOrder Int     @default(0)
+
+  @@index([productId, sortOrder])
+}
+
+model Media {
+  id            String         @id @default(cuid())
+  filename      String
+  originalName  String
+  mimeType      String
+  size          Int
+  alt           String         @default("")
+  storageKey    String         @unique
+  url           String
+  createdAt     DateTime       @default(now())
+  productImages ProductImage[]
+  categories    Category[]
+
+  @@index([createdAt])
+}
+
+model Page {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  title          String
+  excerpt        String?  @db.Text
+  content        String   @db.Text
+  published      Boolean  @default(false)
+  showInNav      Boolean  @default(false)
+  showInFooter   Boolean  @default(true)
+  navLabel       String?
+  sortOrder      Int      @default(0)
+  seoTitle       String?
+  seoDescription String?  @db.Text
+  canonicalPath  String?
+  ogTitle        String?
+  robots         String   @default("index,follow")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([published, sortOrder])
+}
+
+model Faq {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String   @db.Text
+  sortOrder Int      @default(0)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([published, sortOrder])
+}
+
+model SiteSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model QuoteRequest {
+  id          String             @id @default(cuid())
+  source      QuoteSource
+  status      QuoteStatus        @default(NEW)
+  companyName String
+  contactName String?
+  phone       String?
+  email       String?
+  note        String?            @db.Text
+  consent     Boolean
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  items       QuoteRequestItem[]
+
+  @@index([status, createdAt])
+}
+
+model QuoteRequestItem {
+  id          String       @id @default(cuid())
+  quoteId     String
+  quote       QuoteRequest @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product?     @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName String
+  sku         String
+  quantity    Decimal      @db.Decimal(12, 3)
+  unit        Unit
+  sortOrder   Int          @default(0)
+
+  @@index([quoteId])
+}
+
+model Redirect {
+  id         String   @id @default(cuid())
+  fromPath   String   @unique
+  toPath     String
+  statusCode Int      @default(301)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  summary   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entity, entityId])
+}
+
+model SeoMeta {
+  id          String   @id @default(cuid())
+  path        String   @unique
+  title       String?
+  description String?  @db.Text
+  canonical   String?
+  ogTitle     String?
+  robots      String   @default("index,follow")
+  extra       Json?
+  updatedAt   DateTime @updatedAt
+}
