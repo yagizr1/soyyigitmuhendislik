@@ -3,9 +3,12 @@ import type { Unit } from "@/lib/units";
 export function decimalPlacesForUnit(unit: Unit): number {
   switch (unit) {
     case "PIECE":
+    case "SET":
+    case "BOX":
       return 0;
     case "METER":
     case "KILOGRAM":
+    case "SQUARE_METER":
       return 2;
     case "TON":
       return 3;

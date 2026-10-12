@@ -23,6 +23,7 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   output: "standalone",
+  serverExternalPackages: ["exceljs", "xlsx"],
   experimental: {
     serverActions: {
       bodySizeLimit: "6mb",

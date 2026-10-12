@@ -1,4 +1,4 @@
-export const UNITS = ["PIECE", "METER", "KILOGRAM", "TON"] as const;
+export const UNITS = ["PIECE", "METER", "KILOGRAM", "TON", "SQUARE_METER", "SET", "BOX"] as const;
 
 export type Unit = (typeof UNITS)[number];
 
@@ -16,6 +16,9 @@ export const UNIT_LABELS: Record<Unit, string> = {
   METER: "metre",
   KILOGRAM: "kilogram",
   TON: "ton",
+  SQUARE_METER: "m²",
+  SET: "takım",
+  BOX: "koli",
 };
 
 export const STOCK_LABELS: Record<StockStatus, string> = {

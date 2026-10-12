@@ -3,7 +3,8 @@ import { slugify } from "@/lib/slug";
 import { addQuantities, normalizeQuantity, quantityAtLeast } from "@/lib/quantity";
 import { buildQuoteMessage, buildWhatsAppUrl, normalizeWhatsAppNumber } from "@/lib/whatsapp";
 import { sanitizeRichText } from "@/lib/sanitize";
-import { parseProductCsv } from "@/lib/csv";
+import { buildProductSheet, parseProductSheet } from "@/lib/product-sheet";
+import * as XLSX from "xlsx";
 import { can } from "@/lib/permissions";
 import { passwordIssues } from "@/lib/password";
 
@@ -53,12 +54,55 @@ describe("güvenlik ve yetki", () => {
   });
 });
 
-describe("csv", () => {
-  it("ürün satırını okur", () => {
-    const rows = parseProductCsv(
-      "name,sku,slug,categorySlug,description,profileType,sectionShape,widthMm,heightMm,thicknessMm,lengthMm,materialGrade,weightPerMeter,unit,stockStatus,minOrderQty,featured,published,seoTitle,seoDescription\nA,K,a,kutu,aciklama,,,,,,,,,METER,IN_STOCK,6,false,false,,\n",
-    );
-    expect(rows[0]?.name).toBe("A");
-    expect(rows[0]?.unit).toBe("METER");
+describe("excel", () => {
+  it("her satırı sütun bilgilerinden ürün olarak okur", async () => {
+    const buffer = await buildProductSheet([
+      {
+        name: "40x40 Profil",
+        sku: "KP-1",
+        slug: "40x40-profil",
+        categorySlug: "Kare profil",
+        description: "Açıklama",
+        profileType: "",
+        sectionShape: "",
+        widthMm: "40",
+        heightMm: "",
+        thicknessMm: "",
+        lengthMm: "",
+        materialGrade: "",
+        weightPerMeter: "",
+        unit: "METER",
+        stockStatus: "IN_STOCK",
+        minOrderQty: "6",
+        featured: "false",
+        published: "true",
+        seoTitle: "",
+        seoDescription: "",
+      },
+    ]);
+    const rows = await parseProductSheet(buffer);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.line).toBe(2);
+    expect(rows[0]?.row.name).toBe("40x40 Profil");
+    expect(rows[0]?.row.categorySlug).toBe("Kare profil");
+    expect(rows[0]?.row.unit).toBe("METER");
+    expect(rows[0]?.row.published).toBe("true");
+    expect(rows[0]?.row.widthMm).toBe("40");
+  });
+
+  it("eski xls dosyasını da okur", async () => {
+    const sheet = XLSX.utils.aoa_to_sheet([
+      ["Ürün adı", "Ürün kodu", "Kategori", "Birim", "Yayında", "En (mm)"],
+      ["Lama 20", "LM-20", "Lama", "adet", "evet", 20],
+    ]);
+    const book = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(book, sheet, "Ürünler");
+    const xls = XLSX.write(book, { type: "buffer", bookType: "xls" }) as Buffer;
+    const rows = await parseProductSheet(xls);
+    expect(rows[0]?.row.name).toBe("Lama 20");
+    expect(rows[0]?.row.sku).toBe("LM-20");
+    expect(rows[0]?.row.unit).toBe("PIECE");
+    expect(rows[0]?.row.published).toBe("true");
+    expect(rows[0]?.row.widthMm).toBe("20");
   });
 });

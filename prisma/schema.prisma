@@ -17,6 +17,9 @@ enum Unit {
   METER
   KILOGRAM
   TON
+  SQUARE_METER
+  SET
+  BOX
 }
 
 enum StockStatus {

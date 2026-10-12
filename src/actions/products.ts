@@ -10,9 +10,9 @@ import { fail, type ActionResult } from "@/lib/action-result";
 import { isUniqueConstraint, publicErrorMessage } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { plainText } from "@/lib/sanitize";
+import { parseProductSheet, ProductSheetError, buildProductSheet, type ProductSheetRow } from "@/lib/product-sheet";
 import { slugify } from "@/lib/slug";
 import { isStockStatus, isUnit } from "@/lib/units";
-import { parseProductCsv, PRODUCT_CSV_COLUMNS, toCsv } from "@/lib/csv";
 import { deleteStoredFile, saveImage } from "@/lib/storage";
 
 function emptyToNull(value: string | undefined): string | null {
@@ -23,6 +23,7 @@ function emptyToNull(value: string | undefined): string | null {
 function touchProduct(slug?: string, categorySlug?: string) {
   revalidatePath("/");
   revalidatePath("/urunler");
+  revalidatePath("/admin/urunler");
   if (slug) revalidatePath(`/urun/${slug}`);
   if (categorySlug) revalidatePath(`/kategori/${categorySlug}`);
 }
@@ -304,28 +305,54 @@ export async function deleteProductImage(imageId: string): Promise<ActionResult>
   }
 }
 
-export async function importProductsCsv(formData: FormData): Promise<ActionResult<{ created: number; errors: string[] }>> {
+function categoryIdFor(
+  value: string,
+  categories: { id: string; slug: string; name: string }[],
+): string | null | "ambiguous" {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const slug = slugify(trimmed);
+  const bySlug = categories.filter((category) => category.slug === trimmed || category.slug === slug);
+  if (bySlug.length === 1) return bySlug[0].id;
+  const needle = trimmed.toLocaleLowerCase("tr-TR");
+  const byName = categories.filter((category) => category.name.trim().toLocaleLowerCase("tr-TR") === needle);
+  if (byName.length === 1) return byName[0].id;
+  if (bySlug.length > 1 || byName.length > 1) return "ambiguous";
+  return null;
+}
+
+export async function importProductsXlsx(formData: FormData): Promise<ActionResult<{ created: number; errors: string[] }>> {
   try {
     const user = await requirePermission("products.write");
     const file = formData.get("file");
-    if (!(file instanceof File)) return fail("CSV dosyası seçin.");
-    if (file.size > 2 * 1024 * 1024) return fail("CSV dosyası 2 MB sınırını aşıyor.");
-    const text = await file.text();
+    if (!(file instanceof File)) return fail("Excel dosyası seçin.");
+    const filename = file.name.toLowerCase();
+    if (!filename.endsWith(".xls") && !filename.endsWith(".xlsx")) return fail("Dosya .xls veya .xlsx olmalı.");
+    if (file.size > 5 * 1024 * 1024) return fail("Excel dosyası 5 MB sınırını aşıyor.");
     let rows;
     try {
-      rows = parseProductCsv(text);
-    } catch {
-      return fail("CSV okunamadı. Sütun başlıklarını örnek dosyayla karşılaştırın.");
+      rows = await parseProductSheet(new Uint8Array(await file.arrayBuffer()));
+    } catch (error) {
+      if (error instanceof ProductSheetError) return fail(error.message);
+      return fail("Excel okunamadı. Sütun başlıklarını indirilen dosyayla karşılaştırın.");
     }
-    const categories = await prisma.category.findMany({ select: { id: true, slug: true } });
-    const bySlug = new Map(categories.map((category) => [category.slug, category.id]));
+    if (rows.length === 0) return fail("Listede eklenecek ürün satırı yok.");
+    const categories = await prisma.category.findMany({ select: { id: true, slug: true, name: true } });
     let created = 0;
     const errors: string[] = [];
-    for (const [index, row] of rows.entries()) {
-      const line = index + 2;
-      const categoryId = bySlug.get(row.categorySlug);
+    for (const item of rows) {
+      const { line, row } = item;
+      const categoryId = categoryIdFor(row.categorySlug, categories);
+      if (categoryId === "ambiguous") {
+        errors.push(`Satır ${line}: birden fazla kategori eşleşti (${row.categorySlug}).`);
+        continue;
+      }
       if (!categoryId) {
-        errors.push(`Satır ${line}: kategori bulunamadı (${row.categorySlug}).`);
+        errors.push(`Satır ${line}: kategori bulunamadı (${row.categorySlug || "boş"}).`);
+        continue;
+      }
+      if (!row.unit.trim()) {
+        errors.push(`Satır ${line}: birim gerekli (adet, metre, kilogram veya ton).`);
         continue;
       }
       if (!isUnit(row.unit) || !isStockStatus(row.stockStatus)) {
@@ -335,8 +362,8 @@ export async function importProductsCsv(formData: FormData): Promise<ActionResul
       const parsed = productSchema.safeParse({
         ...row,
         categoryId,
-        featured: row.featured === "true" || row.featured === "1",
-        published: row.published === "true" || row.published === "1",
+        featured: row.featured === "true",
+        published: row.published === "true",
         specs: {},
       });
       if (!parsed.success) {
@@ -358,7 +385,7 @@ export async function importProductsCsv(formData: FormData): Promise<ActionResul
       userId: user.id,
       action: "product.import",
       entity: "Product",
-      summary: `${created} ürün CSV ile eklendi`,
+      summary: `${created} ürün Excel ile eklendi`,
     });
     touchProduct();
     return { ok: true, data: { created, errors: errors.slice(0, 30) } };
@@ -368,36 +395,33 @@ export async function importProductsCsv(formData: FormData): Promise<ActionResul
   }
 }
 
-export async function buildProductCsv(): Promise<string> {
+export async function buildProductWorkbook(): Promise<Buffer> {
   await requirePermission("products.write");
   const products = await prisma.product.findMany({
-    include: { category: { select: { slug: true } } },
+    include: { category: { select: { name: true } } },
     orderBy: { sku: "asc" },
   });
-  const rows = [
-    [...PRODUCT_CSV_COLUMNS],
-    ...products.map((product) => [
-      product.name,
-      product.sku,
-      product.slug,
-      product.category.slug,
-      product.description,
-      product.profileType ?? "",
-      product.sectionShape ?? "",
-      product.widthMm?.toString() ?? "",
-      product.heightMm?.toString() ?? "",
-      product.thicknessMm?.toString() ?? "",
-      product.lengthMm?.toString() ?? "",
-      product.materialGrade ?? "",
-      product.weightPerMeter?.toString() ?? "",
-      product.unit,
-      product.stockStatus,
-      product.minOrderQty.toString(),
-      String(product.featured),
-      String(product.published),
-      product.seoTitle ?? "",
-      product.seoDescription ?? "",
-    ]),
-  ];
-  return toCsv(rows);
+  const rows: ProductSheetRow[] = products.map((product) => ({
+    name: product.name,
+    sku: product.sku,
+    slug: product.slug,
+    categorySlug: product.category.name,
+    description: product.description,
+    profileType: product.profileType ?? "",
+    sectionShape: product.sectionShape ?? "",
+    widthMm: product.widthMm?.toString() ?? "",
+    heightMm: product.heightMm?.toString() ?? "",
+    thicknessMm: product.thicknessMm?.toString() ?? "",
+    lengthMm: product.lengthMm?.toString() ?? "",
+    materialGrade: product.materialGrade ?? "",
+    weightPerMeter: product.weightPerMeter?.toString() ?? "",
+    unit: product.unit,
+    stockStatus: product.stockStatus,
+    minOrderQty: product.minOrderQty.toString(),
+    featured: String(product.featured),
+    published: String(product.published),
+    seoTitle: product.seoTitle ?? "",
+    seoDescription: product.seoDescription ?? "",
+  }));
+  return buildProductSheet(rows);
 }
