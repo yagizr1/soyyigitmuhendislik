@@ -11,8 +11,6 @@ const photos: Record<string, string> = {
   "kutu-profil": "/photos/kutu.jpg",
   kare: "/photos/kare.jpg",
   dikdortgen: "/photos/dikdortgen.jpg",
-  kosebent: "/photos/kosebent.jpg",
-  lama: "/photos/lama.jpg",
 };
 
 export function catalogPhoto(key: string | null | undefined): string | null {
