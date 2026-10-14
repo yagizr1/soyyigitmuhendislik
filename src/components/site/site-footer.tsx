@@ -55,7 +55,7 @@ export function SiteFooter({
                 </a>
               </li>
             ) : null}
-            {company.address ? <li>{company.address}</li> : null}
+            {company.address ? <li>{[company.address, company.city].filter((part) => part.trim()).join(", ")}</li> : null}
             {!company.phone && !company.email && !company.address ? (
               <li className="text-white/80">İletişim bilgisi henüz girilmedi.</li>
             ) : null}

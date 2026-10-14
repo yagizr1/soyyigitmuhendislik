@@ -60,7 +60,9 @@ export default async function CmsPage({ params }: { params: Promise<{ slug: stri
         <div className="mt-8 max-w-3xl space-y-2">
           {company.phone ? <p>Telefon: {company.phone}</p> : null}
           {company.email ? <p>E-posta: {company.email}</p> : null}
-          {company.address ? <p>Adres: {company.address}</p> : null}
+          {company.address ? (
+            <p>Adres: {[company.address, company.city].filter((part) => part.trim()).join(", ")}</p>
+          ) : null}
           {company.hours ? <p>Saatler: {company.hours}</p> : null}
         </div>
       ) : null}

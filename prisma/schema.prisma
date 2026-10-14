@@ -129,6 +129,7 @@ model Product {
   materialGrade  String?
   weightPerMeter Decimal?       @db.Decimal(10, 3)
   unit           Unit           @default(METER)
+  unitPrice      Decimal?       @db.Decimal(12, 2)
   stockStatus    StockStatus    @default(MADE_TO_ORDER)
   minOrderQty    Decimal        @db.Decimal(12, 3)
   featured       Boolean        @default(false)

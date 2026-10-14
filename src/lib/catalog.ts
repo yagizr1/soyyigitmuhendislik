@@ -28,6 +28,7 @@ export type ProductCard = {
   slug: string;
   sku: string;
   unit: Unit;
+  unitPrice: string | null;
   minOrderQty: string;
   stockStatus: StockStatus;
   profileType: string | null;
@@ -104,6 +105,7 @@ const cardSelect = {
   slug: true,
   sku: true,
   unit: true,
+  unitPrice: true,
   minOrderQty: true,
   stockStatus: true,
   profileType: true,
@@ -129,6 +131,7 @@ function toCard(row: CardRow): ProductCard {
     slug: row.slug,
     sku: row.sku,
     unit: row.unit,
+    unitPrice: text(row.unitPrice),
     minOrderQty: row.minOrderQty.toString(),
     stockStatus: row.stockStatus,
     profileType: row.profileType,
@@ -268,6 +271,7 @@ export async function getProductBySlug(slug: string) {
     materialGrade: product.materialGrade,
     weightPerMeter: text(product.weightPerMeter),
     unit: product.unit,
+    unitPrice: text(product.unitPrice),
     stockStatus: product.stockStatus,
     minOrderQty: product.minOrderQty.toString(),
     seoTitle: product.seoTitle,

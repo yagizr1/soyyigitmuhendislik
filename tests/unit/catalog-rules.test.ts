@@ -30,7 +30,9 @@ describe("miktar", () => {
 describe("whatsapp", () => {
   it("seçilen ürün ve miktarla kodlanmış bağlantı üretir", () => {
     expect(normalizeWhatsAppNumber("+90 555 111 22 33")).toBe("+905551112233");
-    expect(normalizeWhatsAppNumber("05551112233")).toBeNull();
+    expect(normalizeWhatsAppNumber("0555 111 22 33")).toBe("+905551112233");
+    expect(normalizeWhatsAppNumber("905551112233")).toBe("+905551112233");
+    expect(normalizeWhatsAppNumber("123")).toBeNull();
     const message = buildQuoteMessage({
       companyName: "Örnek Metal",
       items: [{ name: "40x40x2 mm Kare Profil", sku: "KP-40-40-2", quantity: "120", unitLabel: "metre" }],

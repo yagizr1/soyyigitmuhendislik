@@ -6,7 +6,7 @@ export default async function SettingsPage() {
   return (
     <div>
       <h1 className="font-display text-4xl">Ayarlar</h1>
-      <p className="mt-2 text-sm text-muted">Telefon, adres ve WhatsApp boş bırakılabilir. Numara + ile başlamalıdır.</p>
+      <p className="mt-2 text-sm text-muted">Telefon, adres ve WhatsApp boş bırakılabilir. WhatsApp numarası 05xx veya +90 ile yazılır.</p>
       <div className="mt-6">
         <SettingsForms company={company} social={social} brand={brand} />
       </div>

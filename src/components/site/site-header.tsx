@@ -5,7 +5,6 @@ import { useEffect, useId, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { ChevronDown, Menu, ShoppingCart, X } from "lucide-react";
 import { useQuote } from "@/components/quote/quote-provider";
-
 type LinkItem = { href: string; label: string };
 
 const homeSections: LinkItem[] = [
@@ -64,11 +63,11 @@ function ProductsMenu({
   }
 
   const links = (
-    <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-2 shadow-[0_22px_50px_-28px_rgba(30,36,43,0.7)] ring-1 ring-black/5">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card p-2 shadow-[0_22px_50px_-28px_rgba(30,36,43,0.7)] ring-1 ring-black/5">
       <p className="px-3 pt-2 pb-1 text-[11px] font-semibold tracking-[0.16em] text-zinc-400 uppercase">Katalog</p>
       <Link
         href="/urunler"
-        className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold text-zinc-950 transition hover:bg-zinc-50"
+        className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold text-foreground transition hover:bg-zinc-50"
         onClick={close}
       >
         Tüm ürünler
@@ -81,7 +80,7 @@ function ProductsMenu({
         <Link
           key={category.href}
           href={category.href}
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-zinc-700 transition hover:bg-[#fff4ec] hover:text-zinc-950"
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-foreground/80 transition hover:bg-[#fff4ec] hover:text-foreground"
           onClick={close}
         >
           <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-accent" />
@@ -95,7 +94,7 @@ function ProductsMenu({
     <div ref={rootRef} className={variant === "dropdown" ? "relative" : undefined}>
       <button
         type="button"
-        className={`flex min-h-11 cursor-pointer items-center gap-1.5 rounded-md px-3 font-medium transition hover:bg-zinc-100 ${variant === "inline" ? "w-full" : ""} ${open ? "bg-zinc-100" : ""}`}
+        className={`flex min-h-11 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-md px-3 font-medium transition hover:bg-zinc-100 ${variant === "inline" ? "w-full" : "shrink-0"} ${open ? "bg-zinc-100" : ""}`}
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((value) => !value)}
@@ -139,7 +138,7 @@ function NavLinks({
         <Link
           key={section.href}
           href={section.href}
-          className="flex min-h-11 items-center rounded-md px-3 hover:bg-zinc-100"
+          className="flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-md px-3 hover:bg-zinc-100"
           onClick={(event) => {
             if (scrollToSection(section.href)) event.preventDefault();
             onNavigate?.();
@@ -172,9 +171,9 @@ export function SiteHeader({
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-card/95 shadow-sm backdrop-blur">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-2">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-2">
         {brand}
-        <nav aria-label="Ana menü" className="relative hidden items-center gap-1 lg:flex">
+        <nav aria-label="Ana menü" className="relative hidden items-center gap-1 xl:flex">
           <NavLinks categories={categories} variant="dropdown" />
         </nav>
         <div className="flex items-center gap-2">
@@ -184,7 +183,7 @@ export function SiteHeader({
           </Link>
           <Dialog.Root open={open} onOpenChange={setOpen}>
             <Dialog.Trigger asChild>
-              <button type="button" className="inline-flex size-11 items-center justify-center rounded-md border border-border lg:hidden" aria-label="Menüyü aç">
+              <button type="button" className="inline-flex size-11 items-center justify-center rounded-md border border-border xl:hidden" aria-label="Menüyü aç">
                 <Menu aria-hidden="true" />
               </button>
             </Dialog.Trigger>

@@ -17,8 +17,8 @@ export function AboutStrip({ name }: { name: string }) {
           <div>
             <h3 className="border-b border-[#dddddd] pb-2.5 text-[34px] leading-tight font-bold text-zinc-900">{name}</h3>
             <p className="mt-5 text-[19px] leading-relaxed text-zinc-900">
-              Çelik profil kataloğundan ürün kodu, ölçü ve miktar seçerek teklif listesi oluşturabilirsiniz. Bu metin örnektir;
-              kuruluş yılı ve adres bilgisi girilmemiştir.
+              Çelik profil kataloğundan ürün kodu, ölçü ve miktar seçerek teklif listesi oluşturabilirsiniz. İşletme
+              Erenler, Sakarya’dadır.
             </p>
             <p className="mt-5 text-[19px] leading-relaxed text-zinc-900">
               Yayınlanan kayıtlar tanıtım amaçlıdır. Fiyat sitede ilan edilmez; seçilen ürünler teklif üzerine değerlendirilir.

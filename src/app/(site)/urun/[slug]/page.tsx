@@ -3,14 +3,15 @@ import { notFound, permanentRedirect, redirect } from "next/navigation";
 import { AddToQuote } from "@/components/quote/add-to-quote";
 import { Breadcrumbs } from "@/components/site/breadcrumbs";
 import { Gallery } from "@/components/site/gallery";
+import { PriceCalculator } from "@/components/site/price-calculator";
 import { ProductCard } from "@/components/site/product-card";
 import { findRedirect, getProductBySlug } from "@/lib/catalog";
 import { catalogPhoto } from "@/lib/catalog-photos";
+import { formatTry } from "@/lib/money";
 import { decimalPlacesForUnit, formatQuantity } from "@/lib/quantity";
 import { absoluteUrl, jsonLdScript } from "@/lib/site";
 import { getCompany } from "@/lib/settings";
 import { STOCK_LABELS, UNIT_LABELS } from "@/lib/units";
-import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -49,16 +50,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     ["Malzeme / kalite", product.materialGrade],
     ["Metre ağırlığı", product.weightPerMeter ? `${product.weightPerMeter} kg/m` : null],
     ["Satış birimi", unitLabel],
+    ["Birim fiyat", product.unitPrice ? `${formatTry(Number(product.unitPrice))} / ${unitLabel}` : null],
     ["Minimum miktar", `${formatQuantity(product.minOrderQty, places)} ${unitLabel}`],
     ["Stok durumu", STOCK_LABELS[product.stockStatus]],
     ...Object.entries(product.specs).map(([key, value]) => [key, value] as [string, string]),
   ].filter((row): row is [string, string] => Boolean(row[1]));
-  const infoUrl = company.whatsapp
-    ? buildWhatsAppUrl(
-        company.whatsapp,
-        `Merhaba, ${product.name} (kod: ${product.sku}) hakkında bilgi almak istiyorum.\n\nBu mesaj taslaktır; gönderilmeden firmaya ulaşmış sayılmaz.`,
-      )
-    : null;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -87,27 +83,15 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           <h1 className="mt-1 font-display text-4xl">{product.name}</h1>
           <p className="mt-2 text-muted">Kod: {product.sku}</p>
           <p className="mt-4 leading-7">{product.description}</p>
-          <p className="mt-4 rounded-md bg-zinc-100 p-3 text-sm">Fiyat teklif üzerine belirlenir. Birim dönüşümü yapılmaz.</p>
-          <div className="mt-4 grid max-w-xl grid-cols-1 gap-2 sm:grid-cols-2">
-            {infoUrl ? (
-              <a
-                href={infoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-h-11 items-center justify-center rounded-md bg-[#128C7E] px-3 py-2 text-center text-sm leading-tight font-semibold text-white transition hover:brightness-110"
-              >
-                WhatsApp&apos;tan bilgi al
-              </a>
-            ) : (
-              <button
-                type="button"
-                disabled
-                title="WhatsApp numarası henüz tanımlanmadı."
-                className="inline-flex min-h-11 cursor-not-allowed items-center justify-center rounded-md bg-[#128C7E] px-3 py-2 text-center text-sm leading-tight font-semibold text-white opacity-60"
-              >
-                WhatsApp&apos;tan bilgi al
-              </button>
-            )}
+          <PriceCalculator
+            name={product.name}
+            sku={product.sku}
+            unit={product.unit}
+            unitPrice={product.unitPrice}
+            minOrderQty={product.minOrderQty}
+            whatsapp={company.whatsapp}
+          />
+          <div className="mt-3 max-w-xl">
             <AddToQuote
               product={{
                 productId: product.id,

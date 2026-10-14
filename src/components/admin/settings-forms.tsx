@@ -1,10 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { toast } from "sonner";
 import { saveBrand, saveCompany, saveSocial } from "@/actions/settings";
 import { uploadMedia } from "@/actions/media";
 import { Button } from "@/components/ui/button";
+import type { ActionResult } from "@/lib/action-result";
 import type { BrandSettings, CompanySettings, SocialSettings } from "@/lib/defaults";
+
+function failureText(result: Extract<ActionResult, { ok: false }>): string {
+  const details = result.fieldErrors ? Object.values(result.fieldErrors) : [];
+  return details.length > 0 ? details.join(" ") : result.message;
+}
 
 export function SettingsForms({
   company,
@@ -15,12 +22,14 @@ export function SettingsForms({
   social: SocialSettings;
   brand: BrandSettings;
 }) {
+  const [companyError, setCompanyError] = useState("");
   return (
     <div className="grid max-w-3xl gap-8">
       <form
         className="grid gap-2"
         onSubmit={async (event) => {
           event.preventDefault();
+          setCompanyError("");
           const form = new FormData(event.currentTarget);
           const result = await saveCompany({
             name: String(form.get("name") ?? ""),
@@ -35,20 +44,27 @@ export function SettingsForms({
             hours: String(form.get("hours") ?? ""),
             footerNote: String(form.get("footerNote") ?? ""),
           });
-          toast[result.ok ? "success" : "error"](result.ok ? "Firma bilgileri kaydedildi." : result.message);
+          if (result.ok) {
+            toast.success("Firma bilgileri kaydedildi.");
+            return;
+          }
+          const message = failureText(result);
+          setCompanyError(message);
+          toast.error(message);
         }}
       >
         <h2 className="font-display text-2xl">Firma</h2>
-        <input name="name" defaultValue={company.name} className="h-11 rounded-md border px-3" />
-        <input name="legalName" defaultValue={company.legalName} placeholder="Yasal unvan" className="h-11 rounded-md border px-3" />
-        <input name="phone" defaultValue={company.phone} placeholder="Telefon" className="h-11 rounded-md border px-3" />
-        <input name="email" defaultValue={company.email} placeholder="E-posta" className="h-11 rounded-md border px-3" />
-        <input name="whatsapp" defaultValue={company.whatsapp} placeholder="+90555..." className="h-11 rounded-md border px-3" />
-        <textarea name="address" defaultValue={company.address} placeholder="Adres" className="min-h-20 rounded-md border px-3 py-2" />
-        <input name="city" defaultValue={company.city} placeholder="Şehir" className="h-11 rounded-md border px-3" />
-        <input name="mapUrl" defaultValue={company.mapUrl} placeholder="Google Haritalar bağlantısı" className="h-11 rounded-md border px-3" />
-        <input name="hours" defaultValue={company.hours} placeholder="Çalışma saatleri" className="h-11 rounded-md border px-3" />
-        <textarea name="footerNote" defaultValue={company.footerNote} className="min-h-20 rounded-md border px-3 py-2" />
+        <label className="grid gap-1 text-sm">Firma adı<input name="name" defaultValue={company.name} required className="h-11 rounded-md border px-3" /></label>
+        <label className="grid gap-1 text-sm">Yasal unvan<input name="legalName" defaultValue={company.legalName} className="h-11 rounded-md border px-3" /></label>
+        <label className="grid gap-1 text-sm">Telefon<input name="phone" defaultValue={company.phone} placeholder="0264 000 00 00" className="h-11 rounded-md border px-3" /></label>
+        <label className="grid gap-1 text-sm">E-posta<input name="email" type="email" defaultValue={company.email} placeholder="info@soyyigitmuhendislik.com" className="h-11 rounded-md border px-3" /></label>
+        <label className="grid gap-1 text-sm">WhatsApp<input name="whatsapp" defaultValue={company.whatsapp} placeholder="05xx veya +90" className="h-11 rounded-md border px-3" /></label>
+        <label className="grid gap-1 text-sm">Adres<textarea name="address" defaultValue={company.address} className="min-h-20 rounded-md border px-3 py-2" /></label>
+        <label className="grid gap-1 text-sm">Şehir<input name="city" defaultValue={company.city} className="h-11 rounded-md border px-3" /></label>
+        <label className="grid gap-1 text-sm">Harita bağlantısı<input name="mapUrl" defaultValue={company.mapUrl} placeholder="https://maps.google.com/..." className="h-11 rounded-md border px-3" /></label>
+        <label className="grid gap-1 text-sm">Çalışma saatleri<input name="hours" defaultValue={company.hours} className="h-11 rounded-md border px-3" /></label>
+        <label className="grid gap-1 text-sm">Alt bilgi<textarea name="footerNote" defaultValue={company.footerNote} className="min-h-20 rounded-md border px-3 py-2" /></label>
+        {companyError ? <p className="text-sm text-red-700">{companyError}</p> : null}
         <Button type="submit">Firma bilgilerini kaydet</Button>
       </form>
       <form
@@ -62,7 +78,7 @@ export function SettingsForms({
             facebook: String(form.get("facebook") ?? ""),
             youtube: String(form.get("youtube") ?? ""),
           });
-          toast[result.ok ? "success" : "error"](result.ok ? "Sosyal bağlantılar kaydedildi." : result.message);
+          toast[result.ok ? "success" : "error"](result.ok ? "Sosyal bağlantılar kaydedildi." : failureText(result));
         }}
       >
         <h2 className="font-display text-2xl">Sosyal</h2>

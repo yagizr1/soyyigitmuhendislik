@@ -43,6 +43,7 @@ export const productSchema = z.object({
   materialGrade: z.string().trim().max(80).optional().or(z.literal("")),
   weightPerMeter: optionalDecimal,
   unit: z.enum(UNITS),
+  unitPrice: optionalDecimal,
   stockStatus: z.enum(STOCK_STATUSES),
   minOrderQty: z
     .string()
@@ -140,10 +141,23 @@ export const contactSchema = z.object({
 
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Renk #rrggbb biçiminde olmalı.");
 
-const optionalUrl = z.union([
-  z.literal(""),
-  z.string().trim().url("Geçerli bir bağlantı girin."),
-]);
+const optionalUrl = z
+  .string()
+  .trim()
+  .transform((value) => {
+    if (value === "" || /^https?:\/\//i.test(value)) return value;
+    if (/^[\w.-]+\.[a-z]{2,}([/?#]|$)/i.test(value)) return `https://${value}`;
+    return value;
+  })
+  .refine((value) => {
+    if (value === "") return true;
+    try {
+      const url = new URL(value);
+      return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+      return false;
+    }
+  }, "Geçerli bir bağlantı girin. Adres https:// ile başlamalı.");
 
 export const companySchema = z.object({
   name: required("Firma adı").max(120),
@@ -155,7 +169,7 @@ export const companySchema = z.object({
     .string()
     .trim()
     .refine((value) => value === "" || normalizeWhatsAppNumber(value) !== null, {
-      message: "WhatsApp numarası uluslararası biçimde olmalı. Örnek: +905551112233",
+      message: "WhatsApp numarası geçersiz. 05xx ile ya da +90 ile yazın.",
     })
     .transform((value) => (value === "" ? "" : (normalizeWhatsAppNumber(value) ?? ""))),
   address: z.string().trim().max(300).optional().or(z.literal("")),

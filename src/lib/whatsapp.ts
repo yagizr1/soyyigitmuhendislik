@@ -17,7 +17,11 @@ export type QuoteMessageInput = {
 const E164 = /^\+[1-9]\d{7,14}$/;
 
 export function normalizeWhatsAppNumber(input: string): string | null {
-  const compact = input.replace(/[\s()-]/g, "");
+  let compact = input.replace(/[\s().-]/g, "");
+  if (compact.startsWith("00")) compact = `+${compact.slice(2)}`;
+  if (/^0\d{10}$/.test(compact)) compact = `+90${compact.slice(1)}`;
+  else if (/^90\d{10}$/.test(compact)) compact = `+${compact}`;
+  else if (/^\d{10}$/.test(compact)) compact = `+90${compact}`;
   if (!E164.test(compact)) return null;
   return compact;
 }

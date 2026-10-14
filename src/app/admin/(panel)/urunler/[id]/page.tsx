@@ -41,6 +41,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
             materialGrade: product.materialGrade ?? "",
             weightPerMeter: product.weightPerMeter?.toString() ?? "",
             unit: product.unit,
+            unitPrice: product.unitPrice?.toString() ?? "",
             stockStatus: product.stockStatus,
             minOrderQty: product.minOrderQty.toString(),
             featured: product.featured,

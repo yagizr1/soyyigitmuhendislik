@@ -49,6 +49,7 @@ function toData(input: ReturnType<typeof productSchema.parse>): Prisma.ProductUn
     materialGrade: emptyToNull(input.materialGrade),
     weightPerMeter: emptyToNull(input.weightPerMeter),
     unit: input.unit,
+    unitPrice: emptyToNull(input.unitPrice),
     stockStatus: input.stockStatus,
     minOrderQty: input.minOrderQty,
     featured: input.featured,

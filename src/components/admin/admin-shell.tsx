@@ -43,16 +43,13 @@ type NavGroup = {
   items: NavItem[];
 };
 
+const PRIMARY: NavItem[] = [
+  { href: "/admin/urunler", label: "Ürünler", permission: "products.write", icon: Package },
+  { href: "/admin/kategoriler", label: "Kategoriler", permission: "categories.write", icon: Tags },
+  { href: "/admin/teklifler", label: "Teklifler", permission: "quotes.write", icon: ClipboardList },
+];
+
 const GROUPS: NavGroup[] = [
-  {
-    id: "katalog",
-    label: "Katalog",
-    items: [
-      { href: "/admin/urunler", label: "Ürünler", permission: "products.write", icon: Package },
-      { href: "/admin/kategoriler", label: "Kategoriler", permission: "categories.write", icon: Tags },
-      { href: "/admin/medya", label: "Medya", permission: "media.write", icon: Images },
-    ],
-  },
   {
     id: "site",
     label: "Site",
@@ -60,13 +57,9 @@ const GROUPS: NavGroup[] = [
       { href: "/admin/anasayfa", label: "Ana sayfa", permission: "homepage.write", icon: House },
       { href: "/admin/sayfalar", label: "Sayfalar", permission: "pages.write", icon: FileText },
       { href: "/admin/sss", label: "SSS", permission: "faqs.write", icon: SquarePen },
+      { href: "/admin/medya", label: "Medya", permission: "media.write", icon: Images },
       { href: "/admin/seo", label: "SEO", permission: "seo.write", icon: Search },
     ],
-  },
-  {
-    id: "talepler",
-    label: "Talepler",
-    items: [{ href: "/admin/teklifler", label: "Teklifler", permission: "quotes.write", icon: ClipboardList }],
   },
   {
     id: "sistem",
@@ -97,6 +90,7 @@ export function AdminShell({
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const primary = PRIMARY.filter((item) => !item.permission || can(role, item.permission));
   const groups = GROUPS.map((group) => ({
     ...group,
     items: group.items.filter((item) => !item.permission || can(role, item.permission)),
@@ -129,6 +123,24 @@ export function AdminShell({
           <LayoutDashboard aria-hidden="true" className="size-4" />
           Özet
         </Link>
+        {primary.map((item) => {
+          const Icon = item.icon;
+          const current = isCurrent(pathname, item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={current ? "page" : undefined}
+              className={`flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold ${
+                current ? "bg-white text-steel" : "text-white/90 hover:bg-white/10"
+              }`}
+              onClick={() => setMobileOpen(false)}
+            >
+              <Icon aria-hidden="true" className="size-4" />
+              {item.label}
+            </Link>
+          );
+        })}
         {groups.map((group) => {
           const open = groupIsOpen(group);
           const FolderIcon = open ? FolderOpen : Folder;
@@ -195,7 +207,7 @@ export function AdminShell({
   );
 
   return (
-    <div className="min-h-screen bg-[#f4f5f7] lg:grid lg:grid-cols-[17.5rem_1fr]">
+    <div className="min-h-screen bg-background lg:grid lg:grid-cols-[17.5rem_1fr]">
       {mobileOpen ? (
         <button type="button" className="fixed inset-0 z-40 bg-steel/50 lg:hidden" aria-label="Menüyü kapat" onClick={() => setMobileOpen(false)} />
       ) : null}

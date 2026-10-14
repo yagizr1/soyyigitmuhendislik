@@ -55,15 +55,15 @@ export const defaultCompany: CompanySettings = {
   name: "Soyyiğit Mühendislik",
   legalName: "",
   demo: true,
-  phone: "",
+  phone: "0542 452 35 61",
   email: "",
-  whatsapp: "",
-  address: "",
-  city: "",
-  mapUrl: "",
-  hours: "",
-  footerNote:
-    "Örnek kurumsal site. Firma adı proje klasöründen alınmıştır; telefon, adres ve WhatsApp numarası girilmemiştir.",
+  whatsapp: "+905424523561",
+  address: "201. Sk., 54200 Erenler",
+  city: "Sakarya",
+  mapUrl:
+    "https://www.google.com/maps/place/Demir+Profil+-+Soyyi%C4%9Fit+M%C3%BChendislik/@40.7399155,30.4112874,17z",
+  hours: "Pazartesi–Cuma 08:00–18:30, Cumartesi 08:00–16:30, Pazar kapalı",
+  footerNote: "Demir profil ve metal tedarik. Erenler, Sakarya.",
 };
 
 export const defaultSocial: SocialSettings = {

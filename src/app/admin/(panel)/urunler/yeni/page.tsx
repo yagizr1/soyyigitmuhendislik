@@ -1,6 +1,5 @@
 import { ProductForm } from "@/components/admin/product-form";
 import { prisma } from "@/lib/prisma";
-import { slugify } from "@/lib/slug";
 
 export default async function NewProductPage() {
   const categories = await prisma.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } });
@@ -15,7 +14,7 @@ export default async function NewProductPage() {
           specFields={[]}
           values={{
             name: "",
-            slug: slugify("yeni-urun"),
+            slug: "",
             sku: "",
             categoryId: categories[0]?.id ?? "",
             description: "",
@@ -28,6 +27,7 @@ export default async function NewProductPage() {
             materialGrade: "",
             weightPerMeter: "",
             unit: "METER",
+            unitPrice: "",
             stockStatus: "MADE_TO_ORDER",
             minOrderQty: "1",
             featured: false,
